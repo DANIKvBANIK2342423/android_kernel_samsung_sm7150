@@ -128,6 +128,8 @@ static int bt_sock_create(struct net *net, struct socket *sock, int proto,
 
 	if (bt_proto[proto] && try_module_get(bt_proto[proto]->owner)) {
 		err = bt_proto[proto]->create(net, sock, proto, kern);
+		if (!err && !sock->sk)
+			err = -EPROTONOSUPPORT;
 		if (!err)
 			bt_sock_reclassify_lock(sock->sk, proto);
 		module_put(bt_proto[proto]->owner);
