@@ -58,7 +58,28 @@ jobs:
 
       - name: Download latest Google clang
         run: |
-          wget -O llvm.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/mirror-goog-main-llvm-toolchain-source/clang-r596125.tar.gz
+          CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/mirror-goog-main-llvm-toolchain-source/clang-r596125.tar.gz"
+          ok=0
+          for i in 1 2 3 4 5 6; do
+            rm -f llvm.tar.gz
+            if wget -q -O llvm.tar.gz "$CLANG_URL"; then
+              if tar -ztf llvm.tar.gz >/dev/null 2>&1; then
+                ok=1
+                echo "clang downloaded OK on attempt $i"
+                break
+              else
+                echo "attempt $i: downloaded file is not a valid tar.gz"
+              fi
+            else
+              echo "attempt $i: wget failed (server error)"
+            fi
+            echo "waiting 30s before retry..."
+            sleep 30
+          done
+          if [ "$ok" != "1" ]; then
+            echo "clang download failed after 6 attempts"
+            exit 1
+          fi
           mkdir llvm-22; cd llvm-22
           tar -xf ../llvm.tar.gz
           rm ../llvm.tar.gz
